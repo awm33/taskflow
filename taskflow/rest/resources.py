@@ -2,6 +2,7 @@ from datetime import datetime
 
 from marshmallow import Schema, fields
 from marshmallow_sqlalchemy import ModelSchema, field_for
+from sqlalchemy import text
 from flask import request
 from flask_restful import Resource, abort
 from restful_ben.resources import (
@@ -164,6 +165,24 @@ class WorkflowInstanceListResource(QueryEngineMixin, CreateListResource):
 
         return super(WorkflowInstanceListResource, self).post()
 
+class RecurringLastestResource(Resource):
+    def get(self):
+        workflow_instances = self.session.query(WorkflowInstance)\
+            .from_statement(text("""
+                SELECT workflow_instances.* FROM workflow_instances
+                INNER JOIN (
+                    SELECT workflow_name, MAX(started_at) AS max_date
+                    FROM workflow_instances
+                    WHERE status != 'queued' AND scheduled = true
+                    GROUP BY workflow_name) AS tp
+                ON workflow_instances.workflow_name = tp.workflow_name AND
+                   workflow_instances.started_at = tp.max_date
+                ORDER BY workflow_instances.workflow_name;
+            """))\
+            .all()
+
+        return workflow_instances_schema.dump(workflow_instances).data
+
 class TaskInstanceSchema(ModelSchema):
     class Meta:
         model = TaskInstance
@@ -216,7 +235,3 @@ class TaskInstanceListResource(QueryEngineMixin, CreateListResource):
                 request.json['retry_delay'] = task.retry_delay
 
         return super(TaskInstanceListResource, self).post()
-
-class TaskflowRest(object):
-    def __init__(self, app, session):
-        pass

@@ -398,3 +398,82 @@ def test_list_task_instances(app, instances):
         'created_at': iso_regex,
         'updated_at': iso_regex
     })
+
+def test_get_task_instance(app, instances):
+    test_client = app.test_client()
+
+    response = json_call(test_client.get, '/task-instances/1')
+    assert response.status_code == 200
+
+    task_instance = response.json
+    task_instance['worker_id'] = 'foo'
+    previous_updated_at = task_instance['updated_at']
+
+    response = json_call(test_client.put, '/task-instances/1', task_instance)
+    assert response.status_code == 200
+    assert dict_contains(response.json, {
+        'id': 1,
+        'task_name': 'task1',
+        'workflow_instance_id': 1,
+        'status': 'success',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': iso_regex,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': 'foo',
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+    assert response.json['updated_at'] > previous_updated_at
+
+def test_delete_task_instance(app, instances):
+    test_client = app.test_client()
+
+    response = json_call(test_client.get, '/task-instances/1')
+    assert response.status_code == 200
+
+    response = json_call(test_client.delete, '/task-instances/1')
+    assert response.status_code == 204
+
+    response = json_call(test_client.get, '/task-instances/1')
+    assert response.status_code == 404
+
+def test_get_recurring_latest(app, instances, dbsession):
+    test_client = app.test_client()
+
+    workflow_instance = WorkflowInstance(
+        workflow_name='workflow1',
+        scheduled=True,
+        run_at=datetime(2017, 6, 4, 6),
+        started_at=datetime(2017, 6, 4, 6),
+        status='running',
+        priority='normal')
+    dbsession.add(workflow_instance)
+    dbsession.commit()
+
+    response = json_call(test_client.get, '/workflow-instances/recurring-latest')
+    assert response.status_code == 200
+    assert dict_contains(response.json[0], {
+        'id': 2,
+        'workflow_name': 'workflow1',
+        'status': 'running',
+        'run_at': '2017-06-04T06:00:00+00:00',
+        'unique': None,
+        'params': None,
+        'priority': 'normal',
+        'started_at': '2017-06-04T06:00:00+00:00',
+        'scheduled': True,
+        'ended_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
