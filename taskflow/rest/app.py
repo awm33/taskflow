@@ -40,9 +40,11 @@ def create_app(taskflow_instance, connection_string=None):
         api.add_resource(apply_attrs(resources.WorkflowInstanceListResource, attrs), '/workflow-instances')
         api.add_resource(apply_attrs(resources.WorkflowInstanceResource, attrs), '/workflow-instances/<int:instance_id>')
 
-        api.add_resource(apply_attrs(resources.RecurringLastestResource, attrs), '/workflow-instances/recurring-latest')
+        api.add_resource(apply_attrs(resources.RecurringWorkflowLastestResource, attrs), '/workflow-instances/recurring-latest')
 
         api.add_resource(apply_attrs(resources.TaskInstanceListResource, attrs), '/task-instances')
         api.add_resource(apply_attrs(resources.TaskInstanceResource, attrs), '/task-instances/<int:instance_id>')
+
+        api.add_resource(apply_attrs(resources.RecurringTaskLastestResource, attrs), '/task-instances/recurring-latest')
 
     return app

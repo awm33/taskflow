@@ -165,7 +165,7 @@ class WorkflowInstanceListResource(QueryEngineMixin, CreateListResource):
 
         return super(WorkflowInstanceListResource, self).post()
 
-class RecurringLastestResource(Resource):
+class RecurringWorkflowLastestResource(Resource):
     def get(self):
         workflow_instances = self.session.query(WorkflowInstance)\
             .from_statement(text("""
@@ -235,3 +235,21 @@ class TaskInstanceListResource(QueryEngineMixin, CreateListResource):
                 request.json['retry_delay'] = task.retry_delay
 
         return super(TaskInstanceListResource, self).post()
+
+class RecurringTaskLastestResource(Resource):
+    def get(self):
+        task_instances = self.session.query(TaskInstance)\
+            .from_statement(text("""
+                SELECT task_instances.* FROM task_instances
+                INNER JOIN (
+                    SELECT task_name, MAX(started_at) AS max_date
+                    FROM task_instances
+                    WHERE status != 'queued' AND scheduled = true
+                    GROUP BY task_name) AS tp
+                ON task_instances.task_name = tp.task_name AND
+                   task_instances.started_at = tp.max_date
+                ORDER BY task_instances.task_name;
+            """))\
+            .all()
+
+        return task_instances_schema.dump(task_instances).data
