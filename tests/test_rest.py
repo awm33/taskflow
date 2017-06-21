@@ -233,3 +233,168 @@ def test_delete_workflow_instance(app, instances):
     response = json_call(test_client.get, '/task-instances?workflow_instance_id=1')
     assert response.status_code == 200
     assert response.json['count'] == 0
+
+def test_create_task_instance(app, instances):
+    test_client = app.test_client()
+
+    task_instance = {
+        'task_name': 'task1',
+        'unique': 'user-32324-payment-973794'
+    }
+
+    response = json_call(test_client.post, '/task-instances', task_instance)
+    assert response.status_code == 201
+    assert dict_contains(response.json, {
+        'id': 5,
+        'task_name': 'task1',
+        'workflow_instance_id': None,
+        'status': 'queued',
+        'run_at': iso_regex,
+        'unique': 'user-32324-payment-973794',
+        'params': {},
+        'priority': 'normal',
+        'started_at': None,
+        'scheduled': False,
+        'ended_at': None,
+        'attempts': 0,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+
+def test_get_task_instance(app, instances):
+    test_client = app.test_client()
+
+    response = json_call(test_client.get, '/task-instances/1')
+    assert response.status_code == 200
+    assert dict_contains(response.json, {
+        'id': 1,
+        'task_name': 'task1',
+        'workflow_instance_id': 1,
+        'status': 'success',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': iso_regex,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+
+def test_list_task_instances(app, instances):
+    test_client = app.test_client()
+
+    response = json_call(test_client.get, '/task-instances')
+    assert response.status_code == 200
+    assert response.json['count'] == 4
+    assert response.json['page'] == 1
+    assert response.json['total_pages'] == 1
+    assert len(response.json['data']) == 4
+    assert dict_contains(response.json['data'][0], {
+        'id': 1,
+        'task_name': 'task1',
+        'workflow_instance_id': 1,
+        'status': 'success',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': iso_regex,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+    assert dict_contains(response.json['data'][1], {
+        'id': 2,
+        'task_name': 'task2',
+        'workflow_instance_id': 1,
+        'status': 'success',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': iso_regex,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+    assert dict_contains(response.json['data'][2], {
+        'id': 3,
+        'task_name': 'task3',
+        'workflow_instance_id': 1,
+        'status': 'success',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': iso_regex,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })
+    assert dict_contains(response.json['data'][3], {
+        'id': 4,
+        'task_name': 'task4',
+        'workflow_instance_id': 1,
+        'status': 'running',
+        'run_at': iso_regex,
+        'unique': None,
+        'params': {},
+        'priority': 'normal',
+        'started_at': iso_regex,
+        'scheduled': True,
+        'ended_at': None,
+        'attempts': 1,
+        'max_attempts': 1,
+        'timeout': 300,
+        'retry_delay': 300,
+        'push': False,
+        'push_state': None,
+        'worker_id': None,
+        'locked_at': None,
+        'created_at': iso_regex,
+        'updated_at': iso_regex
+    })

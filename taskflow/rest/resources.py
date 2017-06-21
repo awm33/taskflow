@@ -2,6 +2,7 @@ from datetime import datetime
 
 from marshmallow import Schema, fields
 from marshmallow_sqlalchemy import ModelSchema, field_for
+from flask import request
 from flask_restful import Resource, abort
 from restful_ben.resources import (
     RetrieveUpdateDeleteResource,
@@ -152,11 +153,24 @@ class WorkflowInstanceListResource(QueryEngineMixin, CreateListResource):
     many_schema = workflow_instances_schema
     model = WorkflowInstance
 
+    def post(self):
+        if 'workflow_name' in request.json:
+            workflow = self.taskflow.get_workflow(request.json['workflow_name'])
+            if not workflow:
+                abort(400, errors={'workflow_name': 'Workflow `{}` not found'.format(request.json['workflow_name'])})
+
+            if 'priority' not in request.json:
+                request.json['priority'] = workflow.default_priority
+
+        return super(WorkflowInstanceListResource, self).post()
+
 class TaskInstanceSchema(ModelSchema):
     class Meta:
         model = TaskInstance
+        exclude = ['workflow']
 
     id = field_for(TaskInstance, 'id', dump_only=True)
+    workflow_instance_id = field_for(TaskInstance, 'workflow_instance_id', dump_only=True)
     status = field_for(TaskInstance, 'status', dump_only=True)
     scheduled = field_for(WorkflowInstance, 'scheduled', dump_only=True)
     created_at = field_for(TaskInstance, 'created_at', dump_only=True)
@@ -180,6 +194,28 @@ class TaskInstanceListResource(QueryEngineMixin, CreateListResource):
     single_schema = task_instance_schema
     many_schema = task_instances_schema
     model = TaskInstance
+
+    def post(self):
+        if 'task_name' in request.json:
+            task = self.taskflow.get_task(request.json['task_name'])
+            if not task:
+                abort(400, errors={'task_name': 'Task `{}` not found'.format(request.json['task_name'])})
+
+            request.json['push'] = task.push_destination != None
+
+            if 'priority' not in request.json:
+                request.json['priority'] = task.default_priority
+
+            if 'max_attempts' not in request.json:
+                request.json['max_attempts'] = task.retries + 1
+
+            if 'timeout' not in request.json:
+                request.json['timeout'] = task.timeout
+
+            if 'retry_delay' not in request.json:
+                request.json['retry_delay'] = task.retry_delay
+
+        return super(TaskInstanceListResource, self).post()
 
 class TaskflowRest(object):
     def __init__(self, app, session):
