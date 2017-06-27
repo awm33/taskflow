@@ -31,20 +31,20 @@ def create_app(taskflow_instance, connection_string=None):
     }
 
     with app.app_context():
-        api.add_resource(apply_attrs(resources.WorkflowListResource, attrs), '/workflows')
-        api.add_resource(apply_attrs(resources.WorkflowResource, attrs), '/workflows/<workflow_name>')
+        api.add_resource(apply_attrs(resources.WorkflowListResource, attrs), '/v1/workflows')
+        api.add_resource(apply_attrs(resources.WorkflowResource, attrs), '/v1/workflows/<workflow_name>')
 
-        api.add_resource(apply_attrs(resources.TaskListResource, attrs), '/tasks')
-        api.add_resource(apply_attrs(resources.TaskResource, attrs), '/tasks/<task_name>')
+        api.add_resource(apply_attrs(resources.TaskListResource, attrs), '/v1/tasks')
+        api.add_resource(apply_attrs(resources.TaskResource, attrs), '/v1/tasks/<task_name>')
 
-        api.add_resource(apply_attrs(resources.WorkflowInstanceListResource, attrs), '/workflow-instances')
-        api.add_resource(apply_attrs(resources.WorkflowInstanceResource, attrs), '/workflow-instances/<int:instance_id>')
+        api.add_resource(apply_attrs(resources.WorkflowInstanceListResource, attrs), '/v1/workflow-instances')
+        api.add_resource(apply_attrs(resources.WorkflowInstanceResource, attrs), '/v1/workflow-instances/<int:instance_id>')
 
-        api.add_resource(apply_attrs(resources.RecurringWorkflowLastestResource, attrs), '/workflow-instances/recurring-latest')
+        api.add_resource(apply_attrs(resources.RecurringWorkflowLastestResource, attrs), '/v1/workflow-instances/recurring-latest')
 
-        api.add_resource(apply_attrs(resources.TaskInstanceListResource, attrs), '/task-instances')
-        api.add_resource(apply_attrs(resources.TaskInstanceResource, attrs), '/task-instances/<int:instance_id>')
+        api.add_resource(apply_attrs(resources.TaskInstanceListResource, attrs), '/v1/task-instances')
+        api.add_resource(apply_attrs(resources.TaskInstanceResource, attrs), '/v1/task-instances/<int:instance_id>')
 
-        api.add_resource(apply_attrs(resources.RecurringTaskLastestResource, attrs), '/task-instances/recurring-latest')
+        api.add_resource(apply_attrs(resources.RecurringTaskLastestResource, attrs), '/v1/task-instances/recurring-latest')
 
     return app
