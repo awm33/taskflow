@@ -1,7 +1,5 @@
 # Taskflow
 
-## Overview
-
 An advanced yet simple system to run your background tasks and workflows.
 
 Features
@@ -138,4 +136,3 @@ Commands:
   run_task
   scheduler
 ```
-
