@@ -19,6 +19,8 @@ from sqlalchemy.event import listens_for
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from croniter import croniter
+from restful_ben.auth import UserAuthMixin
+from flask_login import UserMixin
 
 metadata = MetaData()
 BaseModel = declarative_base(metadata=metadata)
@@ -438,3 +440,29 @@ class TaskflowEvent(BaseModel):
     timestamp = Column(DateTime, nullable=False)
     event = Column(String, nullable=False)
     message = Column(String)
+
+class User(UserAuthMixin, UserMixin, BaseModel):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    active = Column(Boolean, nullable=False)
+    email = Column(String)
+    role = Column(Enum('normal','admin', name='user_roles'), nullable=False)
+    created_at = Column(DateTime,
+                        nullable=False,
+                        server_default=func.now())
+    updated_at = Column(DateTime,
+                        nullable=False,
+                        server_default=func.now(),
+                        onupdate=func.now())
+
+    @property
+    def is_active(self):
+        return self.active
+
+    def __repr__(self):
+        return '<User id: {} active: {} username: {} email: {}>'.format(self.id, \
+                                                                        self.active, \
+                                                                        self.username, \
+                                                                        self.email)
+

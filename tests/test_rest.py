@@ -1,12 +1,17 @@
 import pytest
 
 from shared_fixtures import *
-from utils import json_call, dict_contains, iso_regex
+from restful_ben.test_utils import json_call, login as orig_login, dict_contains, iso_regex
+
+def login(*args, **kwargs):
+    kwargs['path'] = '/v1/session'
+    return orig_login(*args, **kwargs)
 
 def test_list_workflows(app):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/workflows')
+    response = json_call(test_client.get, '/v1/workflows')
     assert response.status_code == 200
     assert response.json['count'] == 2
     assert response.json['page'] == 1
@@ -39,8 +44,9 @@ def test_list_workflows(app):
 
 def test_get_workflow(app):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/workflows/workflow1')
+    response = json_call(test_client.get, '/v1/workflows/workflow1')
     assert response.status_code == 200
     assert dict_contains(response.json, {
         'name': 'workflow1',
@@ -57,8 +63,9 @@ def test_get_workflow(app):
 
 def test_list_tasks(app):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/tasks')
+    response = json_call(test_client.get, '/v1/tasks')
     assert response.status_code == 200
     assert response.json['count'] == 4
     assert response.json['page'] == 1
@@ -119,13 +126,14 @@ def test_list_tasks(app):
 
 def test_create_workflow_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
     workflow_instance = {
         'workflow_name': 'workflow2',
         'unique': 'user-32324-payment-973794'
     }
 
-    response = json_call(test_client.post, '/workflow-instances', workflow_instance)
+    response = json_call(test_client.post, '/v1/workflow-instances', workflow_instance, headers={'X-CSRF': csrf_token})
     assert response.status_code == 201
     assert dict_contains(response.json, {
         'id': 2,
@@ -144,8 +152,9 @@ def test_create_workflow_instance(app, instances):
 
 def test_get_workflow_instance(app, instances):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/workflow-instances/1')
+    response = json_call(test_client.get, '/v1/workflow-instances/1')
     assert response.status_code == 200
     assert dict_contains(response.json, {
         'id': 1,
@@ -164,8 +173,9 @@ def test_get_workflow_instance(app, instances):
 
 def test_list_workflow_instances(app, instances):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/workflow-instances')
+    response = json_call(test_client.get, '/v1/workflow-instances')
     assert response.status_code == 200
     assert response.json['count'] == 1
     assert response.json['page'] == 1
@@ -188,15 +198,16 @@ def test_list_workflow_instances(app, instances):
 
 def test_update_workflow_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
-    response = json_call(test_client.get, '/workflow-instances/1')
+    response = json_call(test_client.get, '/v1/workflow-instances/1')
     assert response.status_code == 200
 
     workflow_instance = response.json
     workflow_instance['priority'] = 'high'
     previous_updated_at = response.json['updated_at']
 
-    response = json_call(test_client.put, '/workflow-instances/1', workflow_instance)
+    response = json_call(test_client.put, '/v1/workflow-instances/1', workflow_instance, headers={'X-CSRF': csrf_token})
     assert response.status_code == 200
     assert dict_contains(response.json, {
         'id': 1,
@@ -216,33 +227,35 @@ def test_update_workflow_instance(app, instances):
 
 def test_delete_workflow_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
-    response = json_call(test_client.get, '/workflow-instances/1')
+    response = json_call(test_client.get, '/v1/workflow-instances/1')
     assert response.status_code == 200
 
-    response = json_call(test_client.get, '/task-instances?workflow_instance_id=1')
+    response = json_call(test_client.get, '/v1/task-instances?workflow_instance_id=1')
     assert response.status_code == 200
     assert response.json['count'] == 4
 
-    response = json_call(test_client.delete, '/workflow-instances/1')
+    response = json_call(test_client.delete, '/v1/workflow-instances/1', headers={'X-CSRF': csrf_token})
     assert response.status_code == 204
 
-    response = json_call(test_client.get, '/workflow-instances/1')
+    response = json_call(test_client.get, '/v1/workflow-instances/1')
     assert response.status_code == 404
 
-    response = json_call(test_client.get, '/task-instances?workflow_instance_id=1')
+    response = json_call(test_client.get, '/v1/task-instances?workflow_instance_id=1')
     assert response.status_code == 200
     assert response.json['count'] == 0
 
 def test_create_task_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
     task_instance = {
         'task_name': 'task1',
         'unique': 'user-32324-payment-973794'
     }
 
-    response = json_call(test_client.post, '/task-instances', task_instance)
+    response = json_call(test_client.post, '/v1/task-instances', task_instance, headers={'X-CSRF': csrf_token})
     assert response.status_code == 201
     assert dict_contains(response.json, {
         'id': 5,
@@ -270,8 +283,9 @@ def test_create_task_instance(app, instances):
 
 def test_get_task_instance(app, instances):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/task-instances/1')
+    response = json_call(test_client.get, '/v1/task-instances/1')
     assert response.status_code == 200
     assert dict_contains(response.json, {
         'id': 1,
@@ -299,8 +313,9 @@ def test_get_task_instance(app, instances):
 
 def test_list_task_instances(app, instances):
     test_client = app.test_client()
+    login(test_client)
 
-    response = json_call(test_client.get, '/task-instances')
+    response = json_call(test_client.get, '/v1/task-instances')
     assert response.status_code == 200
     assert response.json['count'] == 4
     assert response.json['page'] == 1
@@ -399,17 +414,18 @@ def test_list_task_instances(app, instances):
         'updated_at': iso_regex
     })
 
-def test_get_task_instance(app, instances):
+def test_update_task_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
-    response = json_call(test_client.get, '/task-instances/1')
+    response = json_call(test_client.get, '/v1/task-instances/1')
     assert response.status_code == 200
 
     task_instance = response.json
     task_instance['worker_id'] = 'foo'
     previous_updated_at = task_instance['updated_at']
 
-    response = json_call(test_client.put, '/task-instances/1', task_instance)
+    response = json_call(test_client.put, '/v1/task-instances/1', task_instance, headers={'X-CSRF': csrf_token})
     assert response.status_code == 200
     assert dict_contains(response.json, {
         'id': 1,
@@ -438,18 +454,20 @@ def test_get_task_instance(app, instances):
 
 def test_delete_task_instance(app, instances):
     test_client = app.test_client()
+    csrf_token = login(test_client)
 
-    response = json_call(test_client.get, '/task-instances/1')
+    response = json_call(test_client.get, '/v1/task-instances/1')
     assert response.status_code == 200
 
-    response = json_call(test_client.delete, '/task-instances/1')
+    response = json_call(test_client.delete, '/v1/task-instances/1', headers={'X-CSRF': csrf_token})
     assert response.status_code == 204
 
-    response = json_call(test_client.get, '/task-instances/1')
+    response = json_call(test_client.get, '/v1/task-instances/1')
     assert response.status_code == 404
 
 def test_get_recurring_latest(app, instances, dbsession):
     test_client = app.test_client()
+    login(test_client)
 
     workflow_instance = WorkflowInstance(
         workflow_name='workflow1',
@@ -461,7 +479,7 @@ def test_get_recurring_latest(app, instances, dbsession):
     dbsession.add(workflow_instance)
     dbsession.commit()
 
-    response = json_call(test_client.get, '/workflow-instances/recurring-latest')
+    response = json_call(test_client.get, '/v1/workflow-instances/recurring-latest')
     assert response.status_code == 200
     assert dict_contains(response.json[0], {
         'id': 2,

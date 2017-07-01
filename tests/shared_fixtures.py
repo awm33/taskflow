@@ -1,3 +1,4 @@
+import os
 import logging
 from datetime import datetime
 
@@ -5,8 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 import pytest
 
+os.environ['CSRF_SECRET'] = 'test'
+
 from taskflow import Taskflow, Workflow, WorkflowInstance, Task, TaskInstance
-from taskflow.core.models import BaseModel
+from taskflow.core.models import BaseModel, User
 from taskflow.rest.app import create_app
 
 def get_logging():
@@ -139,6 +142,9 @@ def app(tables, workflows, dbsession):
     taskflow.add_workflows(workflows)
     taskflow.sync_db(dbsession)
 
-    app = create_app(taskflow, connection_string='postgresql://localhost/taskflow_test')
+    dbsession.add(User(active=True, username='amadonna', password='foo', role='admin'))
+    dbsession.commit()
+
+    app = create_app(taskflow, connection_string='postgresql://localhost/taskflow_test', secret_key='foo')
 
     yield app

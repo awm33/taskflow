@@ -5,13 +5,31 @@ from marshmallow_sqlalchemy import ModelSchema, field_for
 from sqlalchemy import text
 from flask import request
 from flask_restful import Resource, abort
+from flask_login import login_required
 from restful_ben.resources import (
     RetrieveUpdateDeleteResource,
     QueryEngineMixin,
     CreateListResource
 )
+from restful_ben.auth import (
+    SessionResource,
+    authorization,
+    CSRF
+)
 
 from taskflow import Taskflow, Workflow, WorkflowInstance, Task, TaskInstance
+from taskflow.core.models import User
+
+csrf = CSRF()
+
+class LocalSessionResource(SessionResource):
+    User = User
+    csrf = csrf
+
+standard_authorization = authorization({
+    'normal': ['GET'],
+    'admin': ['POST','PUT','GET','DELETE']
+})
 
 def to_list_response(data):
     count = len(data)
@@ -43,13 +61,8 @@ class WorkflowSchema(SchedulableSchema):
 workflow_schema = WorkflowSchema()
 workflows_schema = WorkflowSchema(many=True)
 
-# workflow_authorization = authorization({
-#     'normal': ['GET'],
-#     'admin': ['POST','PUT','GET','DELETE']
-# })
-
 class WorkflowListResource(Resource):
-    #method_decorators = [csrf.csrf_check, workflow_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
 
     def get(self):
         self.taskflow.sync_db(self.session, read_only=True)
@@ -58,7 +71,7 @@ class WorkflowListResource(Resource):
         return to_list_response(workflows_data)
 
 class WorkflowResource(Resource):
-    #method_decorators = [csrf.csrf_check, workflow_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
 
     def get(self, workflow_name):
         self.taskflow.sync_db(self.session, read_only=True)
@@ -86,7 +99,7 @@ task_schema = TaskSchema()
 tasks_schema = TaskSchema(many=True)
 
 class TaskListResource(Resource):
-    #method_decorators = [csrf.csrf_check, workflow_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
 
     def get(self):
         self.taskflow.sync_db(self.session, read_only=True)
@@ -98,7 +111,7 @@ class TaskListResource(Resource):
         return to_list_response(tasks_data)
 
 class TaskResource(Resource):
-    #method_decorators = [csrf.csrf_check, workflow_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
 
     def get(self, task_name):
         self.taskflow.sync_db(self.session, read_only=True)
@@ -138,18 +151,13 @@ class WorkflowInstanceSchema(ModelSchema):
 workflow_instance_schema = WorkflowInstanceSchema()
 workflow_instances_schema = WorkflowInstanceSchema(many=True)
 
-# workflow_instance_authorization = authorization({
-#     'normal': ['GET'],
-#     'admin': ['POST','PUT','GET','DELETE']
-# })
-
 class WorkflowInstanceResource(RetrieveUpdateDeleteResource):
-    #method_decorators = [csrf.csrf_check, workflow_instance_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
     single_schema = workflow_instance_schema
     model = WorkflowInstance
 
 class WorkflowInstanceListResource(QueryEngineMixin, CreateListResource):
-    #method_decorators = [csrf.csrf_check, workflow_instance_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
     single_schema = workflow_instance_schema
     many_schema = workflow_instances_schema
     model = WorkflowInstance
@@ -166,6 +174,8 @@ class WorkflowInstanceListResource(QueryEngineMixin, CreateListResource):
         return super(WorkflowInstanceListResource, self).post()
 
 class RecurringWorkflowLastestResource(Resource):
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
+
     def get(self):
         workflow_instances = self.session.query(WorkflowInstance)\
             .from_statement(text("""
@@ -198,18 +208,13 @@ class TaskInstanceSchema(ModelSchema):
 task_instance_schema = TaskInstanceSchema()
 task_instances_schema = TaskInstanceSchema(many=True)
 
-# task_instance_authorization = authorization({
-#     'normal': ['GET'],
-#     'admin': ['POST','PUT','GET','DELETE']
-# })
-
 class TaskInstanceResource(RetrieveUpdateDeleteResource):
-    #method_decorators = [csrf.csrf_check, task_instance_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
     single_schema = task_instance_schema
     model = TaskInstance
 
 class TaskInstanceListResource(QueryEngineMixin, CreateListResource):
-    #method_decorators = [csrf.csrf_check, task_instance_authorization, login_required]
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
     single_schema = task_instance_schema
     many_schema = task_instances_schema
     model = TaskInstance
@@ -237,6 +242,8 @@ class TaskInstanceListResource(QueryEngineMixin, CreateListResource):
         return super(TaskInstanceListResource, self).post()
 
 class RecurringTaskLastestResource(Resource):
+    method_decorators = [csrf.csrf_check, standard_authorization, login_required]
+
     def get(self):
         task_instances = self.session.query(TaskInstance)\
             .from_statement(text("""
